@@ -1,116 +1,76 @@
-# Ascendant
+<p align="center">
+  <img src="https://raw.githubusercontent.com/astro-ascendant/ascendant-docs/main/assets/wordmark.webp" alt="Ascendant" width="360" />
+</p>
 
-Ascendant is a Python package for calculating Vedic astrology charts,
-Vimshottari Dashas, Yoga combinations, Ashtakavarga values, and a named
-seven-karaka Jaimini core.
+Ascendant is a Python library for sidereal astrology. It calculates charts,
+Vimshottari dashas, yogas, Ashtakavarga, and a seven-karaka Jaimini core with
+Swiss Ephemeris through `pyswisseph`, and returns plain Python dictionaries and
+lists.
 
-It uses Swiss Ephemeris through `pyswisseph` and supports typed configuration
-for ayanamsa and house-system defaults.
+## Install
 
-## Installation
-
-Ascendant requires Python 3.11 or later.
+Requires Python 3.11 or later.
 
 ```bash
 python -m pip install astro-ascendant
 ```
 
-`pyswisseph` is installed as a package dependency. No separate `flatlib`
-installation is required.
+`pyswisseph` and `python-dateutil` install automatically. No separate `flatlib`
+setup is required.
 
 ## Quick start
-
-Create an `Ascendant` instance with the local birth time, UTC offset, and
-geographic coordinates:
 
 ```python
 from ascendant import Ascendant
 
-astro = Ascendant(
-    year=1990,
-    month=1,
-    day=1,
-    hour=12,
-    minute=0,
-    second=0,
-    utc="+5:30",
-    latitude=28.6139,
-    longitude=77.2090,
-)
+birth = {
+    "year": 1990,
+    "month": 1,
+    "day": 1,
+    "hour": 12,
+    "minute": 0,
+    "second": 0,
+    "utc": "+5:30",
+    "latitude": 28.6139,
+    "longitude": 77.2090,
+}
 
-# Rasi chart (D1)
+astro = Ascendant(**birth)
+
 chart = astro.get_chart(division=1)
-
-# Detected Yoga combinations
-present_yogas = [
-    yoga for yoga in astro.get_yogas() if yoga["present"]
-]
-
-# Vimshottari Dasha
-dasha_timeline = astro.get_dasha_timeline()
-current_dasha = astro.get_current_dasha()
-
-# Ashtakavarga and Sarvashtakavarga
-ashtakavarga = astro.get_sav()
-sarvashtakavarga = ashtakavarga["sarva"]
-
-# Seven Chara Karakas, Rashi Drishti, Karakamsha, Arudhas, and Argala
+yogas = [yoga for yoga in astro.get_yogas() if yoga["present"]]
+dasha = astro.get_current_dasha()
+sav = astro.get_sav()["sarva"]
 jaimini = astro.get_jaimini()
 ```
 
-By default, Ascendant uses the Lahiri ayanamsa and Whole Sign houses.
+Charts default to the Lahiri ayanamsa and Whole Sign houses.
 
 ## Features
 
-- Sidereal planetary and house calculations using Swiss Ephemeris
-- Divisional charts, including D1, D9, D10, and other supported Vargas
+- Sidereal planetary and house positions from Swiss Ephemeris
+- Divisional charts, including D1, D9, and D10
 - Vimshottari Mahadasha and Antardasha timelines
-- Current Dasha lookup for a supplied date
-- Registered Vedic Yoga evaluation with structured results
+- Yoga evaluation with structured results
 - Bhinnashtakavarga, Sarvashtakavarga, Shodhana, and Shodhya Pinda
-- Named seven-karaka Jaimini core derived from D1 and D9
-- Typed, immutable calculation configuration
+- Seven-karaka Jaimini core derived from D1 and D9
+- Typed, immutable configuration
 
 ## Configuration
 
-Override the defaults for an individual chart:
+Override the defaults per instance:
 
 ```python
-astro = Ascendant(
-    year=1990,
-    month=1,
-    day=1,
-    hour=12,
-    minute=0,
-    second=0,
-    utc="+5:30",
-    latitude=28.6139,
-    longitude=77.2090,
-    ayanamsa="Krishnamurti",
-    house_system="Porphyry",
-)
+astro = Ascendant(**birth, ayanamsa="Krishnamurti", house_system="Porphyry")
 ```
 
-Or pass a typed configuration to one instance:
+For typed settings, pass a configuration object:
 
 ```python
-from ascendant import (
-    Ascendant,
-    AscendantConfig,
-    Ayanamsa,
-    HouseSystem,
-)
+from ascendant import AscendantConfig, Ayanamsa, HouseSystem
 
 astro = Ascendant(
-    year=1990,
-    month=1,
-    day=1,
-    hour=12,
-    minute=0,
-    second=0,
-    utc="+5:30",
-    latitude=28.6139,
-    longitude=77.2090,
+    **birth,
     config=AscendantConfig(
         ayanamsa=Ayanamsa.LAHIRI,
         house_system=HouseSystem.PORPHYRY,
@@ -118,53 +78,17 @@ astro = Ascendant(
 )
 ```
 
-Explicit `Ascendant` arguments take precedence over its typed configuration,
-which takes precedence over the package defaults. Each instance captures an
-immutable configuration snapshot when it is created.
+Explicit arguments take precedence over `config`, which takes precedence over
+the built-in defaults; `get_config()` returns those defaults. Unsupported
+values raise `ValueError`.
 
-Use `get_config()` to inspect the immutable Lahiri and Whole Sign defaults.
-Unsupported constructor values raise `ValueError`.
+Supported ayanamsas: `Lahiri`, `Lahiri_1940`, `Lahiri_VP285`, `Lahiri_ICRC`,
+`Raman`, `Krishnamurti`, `Krishnamurti_Senthilathiban`.
 
-### Supported ayanamsas
-
-- `Lahiri`
-- `Lahiri_1940`
-- `Lahiri_VP285`
-- `Lahiri_ICRC`
-- `Raman`
-- `Krishnamurti`
-- `Krishnamurti_Senthilathiban`
-
-### Supported house systems
-
-- `Whole Sign`
-- `Placidus`
-- `Equal`
-- `Equal 2`
-- `Porphyry`
-
-## Result shape
-
-Ascendant returns regular Python dictionaries and lists. For example, every
-Yoga result contains:
-
-```python
-{
-    "id": "gajakesari",
-    "name": "GajaKesari",
-    "present": True,
-    "strength": 0.9,
-    "details": "Jupiter in house 4 and Moon is in 1",
-    "type": "Positive",
-}
-```
-
-Use `present` to select detected combinations and retain `details` when
-presenting or interpreting a result.
+Supported house systems: `Whole Sign`, `Placidus`, `Equal`, `Equal 2`,
+`Porphyry`.
 
 ## Documentation
-
-The documentation website includes guides for:
 
 - [Divisional charts](https://ascendant-docs.vercel.app/docs/library/charts)
 - [Dasha systems](https://ascendant-docs.vercel.app/docs/library/dasha)
@@ -172,15 +96,19 @@ The documentation website includes guides for:
 - [Yoga combinations](https://ascendant-docs.vercel.app/docs/library/yoga)
 - [Configuration](https://ascendant-docs.vercel.app/docs/configuration)
 
-Its source lives in the separate
-[`ascendant-docs`](https://github.com/thaletto/ascendant-docs) repository.
+The documentation source lives in the separate
+[`ascendant-docs`](https://github.com/astro-ascendant/ascendant-docs)
+repository.
 
 ## Development
 
-Clone the repository, create the local environment, and use the documented
-Make targets:
+Create the environment with [uv](https://docs.astral.sh/uv/), then use the Make
+targets:
 
 ```bash
+uv venv --python 3.11
+uv pip install -e ".[test]" pyright
+
 make help
 make test
 make typecheck
@@ -188,22 +116,4 @@ make lint
 ```
 
 Swiss Ephemeris accuracy cases live in
-[`tests/test_swiss_ephemeris_accuracy.py`](https://github.com/thaletto/ascendant/blob/main/tests/test_swiss_ephemeris_accuracy.py).
-
-## Agent integrations
-
-Agent workflows, the Codex plugin, and the hosted MCP service live in the
-separate
-[`ascendant-agents`](https://github.com/thaletto/ascendant-agents)
-repository. They are not required to use this Python package.
-
-```bash
-npx skills add thaletto/ascendant-agents
-```
-
-Codex users can add that repository as a marketplace:
-
-```bash
-codex plugin marketplace add https://github.com/thaletto/ascendant-agents.git --ref main
-codex plugin add agent@ascendant
-```
+[`tests/test_swiss_ephemeris_accuracy.py`](https://github.com/astro-ascendant/ascendant/blob/main/tests/test_swiss_ephemeris_accuracy.py).
