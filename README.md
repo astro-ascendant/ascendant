@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/astro-ascendant/ascendant-docs/main/assets/wordmark.webp" alt="Ascendant" width="360" />
+  <img src="https://raw.githubusercontent.com/astro-ascendant/website/main/assets/brand/wordmark.svg" alt="Ascendant" width="360" />
 </p>
 
 Ascendant is a Python library for sidereal astrology. It calculates charts,
